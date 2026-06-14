@@ -15,7 +15,7 @@ jobs:
       - name: Install SDL2 via vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: "2025.06.13"
+          vcpkgGitCommitId: "44819aa2a6c10e56065e2b0330e7d6c89d1d2574"
 
       - name: Install SDL2 package
         run: vcpkg install sdl2:x64-windows

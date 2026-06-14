@@ -1,3 +1,0 @@
-/root/lite-graphics-engine/kid-draw/build/CMakeFiles/kid_draw.dir
-/root/lite-graphics-engine/kid-draw/build/CMakeFiles/edit_cache.dir
-/root/lite-graphics-engine/kid-draw/build/CMakeFiles/rebuild_cache.dir
