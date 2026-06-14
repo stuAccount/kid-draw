@@ -264,7 +264,7 @@ public:
     void render_current() const {
         if (cur_.pts.empty()) return;
         set_color(cur_.color);
-        render_thick_points(cur_.pts, cur_.radius);
+        render_thick_points(cur_.pts, cur_.radius, CANVAS_TOP);
     }
 
     int width()  const { return w_; }
@@ -277,9 +277,9 @@ private:
         SDL_SetRenderDrawColor(ren_, c.r, c.g, c.b, c.a);
     }
 
-    void render_thick_points(const std::vector<SDL_Point>& pts, int rad) const {
+    void render_thick_points(const std::vector<SDL_Point>& pts, int rad, int y_offset = 0) const {
         for (size_t i = 0; i < pts.size(); ++i) {
-            draw_filled_circle(ren_, pts[i].x, pts[i].y, rad);
+            draw_filled_circle(ren_, pts[i].x, pts[i].y + y_offset, rad);
             if (i > 0) {
                 // interpolate between consecutive distant points
                 int dx   = pts[i].x - pts[i - 1].x;
@@ -290,7 +290,7 @@ private:
                     float t = (float)s / n;
                     int ix  = pts[i - 1].x + (int)(dx * t);
                     int iy  = pts[i - 1].y + (int)(dy * t);
-                    draw_filled_circle(ren_, ix, iy, rad);
+                    draw_filled_circle(ren_, ix, iy + y_offset, rad);
                 }
             }
         }
