@@ -80,8 +80,8 @@ kid-draw/
     └── main.cpp        # 完整源码（单文件）
 ```
 
-## 提交物清单
+## 截图展示
 
-- [ ] `src/main.cpp` — 源代码
-- [ ] `README.md` — 说明文档
-- [ ] 运行时截图 × 3（画板界面 / 绘制效果 / 印章效果）
+| 绘制效果 | 功能界面 | 清除画布 |
+|:---:|:---:|:---:|
+| ![绘制效果](screenshots/screenshot1_drawing.png) | ![功能界面](screenshots/screenshot2_features.png) | ![清除画布](screenshots/screenshot3_clear.png) |

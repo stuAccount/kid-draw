@@ -558,10 +558,196 @@ static void render_toolbar(SDL_Renderer* r, int selectedColorIdx,
 }
 
 // ============================================================================
+//  6b. Screenshot helpers
+// ============================================================================
+
+static bool save_window_bmp(SDL_Renderer* ren, int w, int h, const char* path) {
+    SDL_Surface* s = SDL_CreateRGBSurfaceWithFormat(
+        0, w, h, 32, SDL_PIXELFORMAT_RGBA32);
+    if (!s) return false;
+    SDL_RenderReadPixels(ren, nullptr, SDL_PIXELFORMAT_RGBA32,
+                         s->pixels, s->pitch);
+    int rc = SDL_SaveBMP(s, path);
+    SDL_FreeSurface(s);
+    return rc == 0;
+}
+
+static int generate_screenshots() {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+        return 1;
+    }
+    SDL_Window* win = SDL_CreateWindow(
+        "KidDraw", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        WIN_W, WIN_H, SDL_WINDOW_HIDDEN);
+    if (!win) { fprintf(stderr, "Window: %s\n", SDL_GetError()); return 1; }
+
+    SDL_Renderer* ren = SDL_CreateRenderer(
+        win, -1, SDL_RENDERER_SOFTWARE);
+    if (!ren) { fprintf(stderr, "Renderer: %s\n", SDL_GetError()); return 1; }
+
+    Canvas canvas(ren, CANVAS_W, CANVAS_H);
+    build_toolbar();
+
+    // ===== Screenshot 1: Freehand drawing (mouse trajectory) =====
+    {
+        // Sun (yellow filled circle, top-right)
+        canvas.begin_stroke(650, 100, 10, PALETTE[2]);
+        for (int a = 0; a <= 360; a += 5) {
+            double r = a * M_PI / 180.0;
+            canvas.extend_stroke(650 + (int)(50*cos(r)), 100 + (int)(50*sin(r)));
+        }
+        canvas.end_stroke();
+
+        // Sun rays
+        Color sunC = {255, 220, 30, 255};
+        for (int a = 0; a < 360; a += 45) {
+            double r = a * M_PI / 180.0;
+            canvas.begin_stroke(650 + (int)(60*cos(r)), 100 + (int)(60*sin(r)), 4, sunC);
+            canvas.extend_stroke(650 + (int)(85*cos(r)), 100 + (int)(85*sin(r)));
+            canvas.end_stroke();
+        }
+
+        // House body (red rectangle)
+        canvas.begin_stroke(200, 250, 7, PALETTE[0]);
+        canvas.extend_stroke(400, 250); canvas.extend_stroke(400, 420);
+        canvas.extend_stroke(200, 420); canvas.extend_stroke(200, 250);
+        canvas.end_stroke();
+
+        // Roof (purple triangle)
+        canvas.begin_stroke(180, 250, 7, PALETTE[5]);
+        canvas.extend_stroke(300, 160); canvas.extend_stroke(420, 250);
+        canvas.end_stroke();
+
+        // Door (brown rectangle)
+        canvas.begin_stroke(275, 340, 4, PALETTE[7]);
+        canvas.extend_stroke(325, 340); canvas.extend_stroke(325, 420);
+        canvas.extend_stroke(275, 420); canvas.extend_stroke(275, 340);
+        canvas.end_stroke();
+
+        // Tree trunk (brown)
+        canvas.begin_stroke(510, 310, 7, PALETTE[7]);
+        for (int y = 310; y <= 420; y += 5) canvas.extend_stroke(510, y);
+        canvas.end_stroke();
+
+        // Tree canopy (green filled area)
+        canvas.begin_stroke(510, 250, 10, PALETTE[3]);
+        for (int a = 0; a <= 360; a += 5) {
+            double r = a * M_PI / 180.0;
+            canvas.extend_stroke(510 + (int)(60*cos(r)), 250 + (int)(50*sin(r)));
+        }
+        canvas.end_stroke();
+
+        // Grass line (green)
+        canvas.begin_stroke(30, 450, 7, PALETTE[3]);
+        for (int x = 30; x <= 900; x += 8)
+            canvas.extend_stroke(x, 450 + (x % 16 == 0 ? -6 : 6));
+        canvas.end_stroke();
+
+        // Flowers
+        int fx[] = {100, 160, 620, 700, 780};
+        Color fcols[] = {PALETTE[0], PALETTE[6], PALETTE[2], PALETTE[0], PALETTE[6]};
+        for (int i = 0; i < 5; ++i) {
+            canvas.begin_stroke(fx[i], 490, 4, PALETTE[3]);
+            canvas.extend_stroke(fx[i], 455); canvas.end_stroke();
+            canvas.begin_stroke(fx[i], 490, 7, fcols[i]);
+            canvas.extend_stroke(fx[i]+3, 488); canvas.extend_stroke(fx[i], 490);
+            canvas.end_stroke();
+        }
+
+        // Render full frame to default target
+        SDL_SetRenderTarget(ren, nullptr);
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+        SDL_RenderClear(ren);
+        render_toolbar(ren, 0, 4, false, STAMP_NONE);
+        canvas.present();
+        canvas.render_current();
+        SDL_RenderPresent(ren);
+        save_window_bmp(ren, WIN_W, WIN_H, "screenshots/screenshot1_drawing.bmp");
+        printf("[saved] screenshots/screenshot1_drawing.bmp\n");
+    }
+
+    // ===== Screenshot 2: Multi-feature showcase =====
+    {
+        canvas.reset();
+
+        // Rainbow arcs (concentric semi-circles)
+        for (int ci = 0; ci < 6; ++ci) {
+            int arcR = 220 - ci * 22;
+            canvas.begin_stroke(450 - arcR, 360, 7, PALETTE[ci]);
+            for (int a = 0; a <= 180; a += 3) {
+                double r = a * M_PI / 180.0;
+                canvas.extend_stroke(450 + (int)(arcR * cos(r)),
+                                     360 - (int)(arcR * sin(r)));
+            }
+            canvas.end_stroke();
+        }
+
+        // Stars (stamps)
+        canvas.place_stamp(STAMP_STAR, 120, 90, 40, PALETTE[2]);
+        canvas.place_stamp(STAMP_STAR, 750, 70, 32, PALETTE[2]);
+        canvas.place_stamp(STAMP_STAR, 850, 180, 28, PALETTE[1]);
+
+        // Hearts (stamps)
+        canvas.place_stamp(STAMP_HEART, 150, 380, 36, PALETTE[0]);
+        canvas.place_stamp(STAMP_HEART, 780, 420, 32, PALETTE[6]);
+
+        // Smiley (stamp)
+        canvas.place_stamp(STAMP_SMILEY, 450, 130, 50, PALETTE[2]);
+
+        // Thick blue wavy line (large brush)
+        canvas.begin_stroke(50, 520, 10, PALETTE[4]);
+        for (int x = 50; x <= 900; x += 6)
+            canvas.extend_stroke(x, 520 + (int)(25 * sin(x * 0.04)));
+        canvas.end_stroke();
+
+        // Render full frame to default target
+        SDL_SetRenderTarget(ren, nullptr);
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+        SDL_RenderClear(ren);
+        render_toolbar(ren, 4, 7, false, STAMP_NONE);
+        canvas.present();
+        canvas.render_current();
+        SDL_RenderPresent(ren);
+        save_window_bmp(ren, WIN_W, WIN_H, "screenshots/screenshot2_features.bmp");
+        printf("[saved] screenshots/screenshot2_features.bmp\n");
+    }
+
+    // ===== Screenshot 3: Clean canvas (after clear) =====
+    {
+        canvas.reset();
+
+        // Render full frame to default target
+        SDL_SetRenderTarget(ren, nullptr);
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+        SDL_RenderClear(ren);
+        render_toolbar(ren, 8, 4, false, STAMP_NONE);
+        canvas.present();
+        canvas.render_current();
+        SDL_RenderPresent(ren);
+        save_window_bmp(ren, WIN_W, WIN_H, "screenshots/screenshot3_clear.bmp");
+        printf("[saved] screenshots/screenshot3_clear.bmp\n");
+    }
+
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(win);
+    SDL_Quit();
+    printf("\nAll 3 screenshots saved to the screenshots/ directory.\n");
+    return 0;
+}
+
+// ============================================================================
 //  7. main()
 // ============================================================================
 
-int main(int /*argc*/, char* /*argv*/[]) {
+int main(int argc, char* argv[]) {
+    // --screenshot mode: generate demo images and exit
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--screenshot") {
+            return generate_screenshots();
+        }
+    }
+
     // ---- init SDL ----
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
